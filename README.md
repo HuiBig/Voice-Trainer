@@ -23,6 +23,17 @@ npm run tauri:dev
 npm run dev
 ```
 
+### 本地 FFmpeg 运行时
+
+开发环境可将 FFmpeg 放在以下目录，二进制文件不会提交到 Git：
+
+```text
+runtime-local/windows-x64/ffmpeg/bin/ffmpeg.exe
+runtime-local/windows-x64/ffmpeg/bin/ffprobe.exe
+```
+
+也可以通过 `VOICE_TRAINER_FFMPEG_DIR` 指定包含这两个文件的目录。应用检测顺序为：环境变量、项目本地运行时、应用内置运行时、应用托管运行时、系统 `PATH`。
+
 ## 构建检查
 
 ```bash

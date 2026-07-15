@@ -1,6 +1,7 @@
 use serde::Serialize;
 use std::{
-    path::Path,
+    ffi::OsStr,
+    path::{Path, PathBuf},
     process::Command,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -56,7 +57,7 @@ struct EnvironmentSummary {
     warnings: Vec<String>,
 }
 
-fn first_output_line(command: &str, args: &[&str]) -> Option<String> {
+fn first_output_line(command: impl AsRef<OsStr>, args: &[&str]) -> Option<String> {
     let output = Command::new(command).args(args).output().ok()?;
     if !output.status.success() {
         return None;
@@ -70,6 +71,65 @@ fn first_output_line(command: &str, args: &[&str]) -> Option<String> {
         .map(str::trim)
         .find(|line| !line.is_empty())
         .map(|line| line.chars().take(180).collect())
+}
+
+fn ffmpeg_candidates(executable: &str) -> Vec<(PathBuf, &'static str)> {
+    let mut candidates = Vec::new();
+
+    if let Some(directory) = std::env::var_os("VOICE_TRAINER_FFMPEG_DIR") {
+        candidates.push((PathBuf::from(directory).join(executable), "环境变量运行时"));
+    }
+
+    #[cfg(debug_assertions)]
+    if let Some(project_root) = Path::new(env!("CARGO_MANIFEST_DIR")).parent() {
+        candidates.push((
+            project_root
+                .join("runtime-local")
+                .join("windows-x64")
+                .join("ffmpeg")
+                .join("bin")
+                .join(executable),
+            "项目本地运行时",
+        ));
+    }
+
+    if let Ok(current_executable) = std::env::current_exe() {
+        if let Some(app_directory) = current_executable.parent() {
+            candidates.push((
+                app_directory
+                    .join("runtime")
+                    .join("ffmpeg")
+                    .join("bin")
+                    .join(executable),
+                "应用内置运行时",
+            ));
+        }
+    }
+
+    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+        candidates.push((
+            PathBuf::from(local_app_data)
+                .join("VoiceTrainer")
+                .join("runtime")
+                .join("current")
+                .join("ffmpeg")
+                .join("bin")
+                .join(executable),
+            "应用托管运行时",
+        ));
+    }
+
+    candidates.push((PathBuf::from(executable), "系统 PATH"));
+    candidates
+}
+
+fn ffmpeg_version(executable: &str) -> Option<String> {
+    ffmpeg_candidates(executable)
+        .into_iter()
+        .filter(|(path, source)| *source == "系统 PATH" || path.is_file())
+        .find_map(|(path, source)| {
+            first_output_line(&path, &["-version"]).map(|version| format!("{version} · {source}"))
+        })
 }
 
 fn dependency(
@@ -159,15 +219,15 @@ fn build_environment_report() -> EnvironmentReport {
             "ffmpeg",
             "FFmpeg",
             true,
-            first_output_line("ffmpeg", &["-version"]),
-            "安装 FFmpeg 并确保 ffmpeg 位于 PATH",
+            ffmpeg_version("ffmpeg.exe"),
+            "将 ffmpeg.exe 放入项目本地或应用托管运行时目录",
         ),
         dependency(
             "ffprobe",
             "FFprobe",
             true,
-            first_output_line("ffprobe", &["-version"]),
-            "FFprobe 通常随 FFmpeg 一起安装",
+            ffmpeg_version("ffprobe.exe"),
+            "将 ffprobe.exe 与 ffmpeg.exe 放在同一个 bin 目录",
         ),
         dependency(
             "nvidia",
@@ -254,5 +314,19 @@ mod tests {
         assert_eq!(report.summary.ready, required_found == required_total);
         assert!(report.resources.total_memory_bytes > 0);
         assert!(!report.platform.architecture.is_empty());
+
+        let local_ffmpeg = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("Tauri crate should have a project root")
+            .join("runtime-local/windows-x64/ffmpeg/bin/ffmpeg.exe");
+        if local_ffmpeg.is_file() {
+            let ffmpeg = report
+                .dependencies
+                .iter()
+                .find(|item| item.id == "ffmpeg")
+                .expect("FFmpeg dependency should exist");
+            assert!(ffmpeg.available);
+            assert!(ffmpeg.detail.contains("项目本地运行时"));
+        }
     }
 }

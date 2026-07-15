@@ -21,6 +21,9 @@ __pycache__/
 .venv/
 venv/
 
+# Large local runtime binaries (installed/staged outside Git)
+runtime-local/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
