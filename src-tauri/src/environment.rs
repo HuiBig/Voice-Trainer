@@ -149,16 +149,66 @@ fn dependency(
     }
 }
 
-fn python_runtime() -> (Option<&'static str>, Option<String>) {
-    for command in ["python", "python3"] {
-        if let Some(version) = first_output_line(command, &["--version"]) {
-            return (Some(command), Some(version));
+fn python_candidates() -> Vec<(PathBuf, &'static str)> {
+    let mut candidates = Vec::new();
+
+    if let Some(executable) = std::env::var_os("VOICE_TRAINER_PYTHON") {
+        candidates.push((PathBuf::from(executable), "环境变量运行时"));
+    }
+
+    #[cfg(debug_assertions)]
+    if let Some(project_root) = Path::new(env!("CARGO_MANIFEST_DIR")).parent() {
+        candidates.push((
+            project_root
+                .join("runtime-local")
+                .join("windows-x64")
+                .join("python")
+                .join("python.exe"),
+            "项目本地运行时",
+        ));
+    }
+
+    if let Ok(current_executable) = std::env::current_exe() {
+        if let Some(app_directory) = current_executable.parent() {
+            candidates.push((
+                app_directory
+                    .join("runtime")
+                    .join("python")
+                    .join("python.exe"),
+                "应用内置运行时",
+            ));
         }
     }
-    (None, None)
+
+    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+        candidates.push((
+            PathBuf::from(local_app_data)
+                .join("VoiceTrainer")
+                .join("runtime")
+                .join("current")
+                .join("python")
+                .join("python.exe"),
+            "应用托管运行时",
+        ));
+    }
+
+    candidates.push((PathBuf::from("python"), "系统 PATH"));
+    candidates.push((PathBuf::from("python3"), "系统 PATH"));
+    candidates
 }
 
-fn pytorch_version(python: Option<&str>) -> Option<String> {
+fn python_runtime() -> (Option<PathBuf>, Option<String>) {
+    python_candidates()
+        .into_iter()
+        .filter(|(path, source)| *source == "系统 PATH" || path.is_file())
+        .find_map(|(path, source)| {
+            first_output_line(&path, &["--version"])
+                .map(|version| (Some(path), Some(format!("{version} · {source}"))))
+        })
+        .unwrap_or((None, None))
+}
+
+fn pytorch_version(python: Option<&Path>) -> Option<String> {
     first_output_line(
         python?,
         &[
@@ -212,7 +262,7 @@ fn build_environment_report() -> EnvironmentReport {
             "pytorch",
             "PyTorch",
             true,
-            pytorch_version(python_command),
+            pytorch_version(python_command.as_deref()),
             "在项目 Python 环境中安装锁定版本的 PyTorch",
         ),
         dependency(
@@ -327,6 +377,21 @@ mod tests {
                 .expect("FFmpeg dependency should exist");
             assert!(ffmpeg.available);
             assert!(ffmpeg.detail.contains("项目本地运行时"));
+        }
+
+        let local_python = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("Tauri crate should have a project root")
+            .join("runtime-local/windows-x64/python/python.exe");
+        if local_python.is_file() {
+            let python = report
+                .dependencies
+                .iter()
+                .find(|item| item.id == "python")
+                .expect("Python dependency should exist");
+            assert!(python.available);
+            assert!(python.detail.contains("Python 3.11.9"));
+            assert!(python.detail.contains("项目本地运行时"));
         }
     }
 }

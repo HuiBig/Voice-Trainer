@@ -34,6 +34,24 @@ runtime-local/windows-x64/ffmpeg/bin/ffprobe.exe
 
 也可以通过 `VOICE_TRAINER_FFMPEG_DIR` 指定包含这两个文件的目录。应用检测顺序为：环境变量、项目本地运行时、应用内置运行时、应用托管运行时、系统 `PATH`。
 
+### 本地 Python 运行时
+
+将官方 Python 3.11.9 embeddable ZIP 放到：
+
+```text
+runtime-local/windows-x64/downloads/python-3.11.9-embed-amd64.zip
+```
+
+然后执行初始化脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-python-runtime.ps1
+```
+
+脚本会生成 `runtime-local/windows-x64/python/`，配置 `Lib/site-packages` 搜索路径并运行基础自检。本地 Python、PyTorch wheel 和其他大型运行时文件均不提交到 Git。
+
+应用会优先检测这个项目本地 Python。也可以通过 `VOICE_TRAINER_PYTHON` 指定 `python.exe` 的完整路径；之后依次检查应用内置运行时、应用托管运行时和系统 `PATH`。
+
 ## 构建检查
 
 ```bash
