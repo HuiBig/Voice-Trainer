@@ -1,4 +1,5 @@
 mod environment;
+mod materials;
 mod projects;
 mod python_worker;
 mod runtime_paths;
@@ -9,6 +10,7 @@ pub fn run() {
         .manage(python_worker::PythonWorkerState::default())
         .invoke_handler(tauri::generate_handler![
             environment::check_environment,
+            materials::scan_material_directory,
             python_worker::start_python_worker,
             python_worker::python_worker_request,
             python_worker::stop_python_worker,

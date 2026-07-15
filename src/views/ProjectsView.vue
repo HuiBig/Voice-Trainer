@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { Delete, EditPen, FolderOpened, MoreFilled, Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { DataAnalysis, Delete, EditPen, FolderOpened, MoreFilled, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore, type TrainingProject } from '../stores/app'
+import { formatBytes } from '../utils/format'
 
 type DialogMode = 'create' | 'rename' | 'delete' | null
 
 const appStore = useAppStore()
 const route = useRoute()
 const router = useRouter()
-const { activeProjectId, isLoadingProjects, projectError, projects } = storeToRefs(appStore)
+const { activeProjectId, isLoadingProjects, isScanningMaterials, materialScanReport, projectError, projects } = storeToRefs(appStore)
 const query = ref('')
 const dialogMode = ref<DialogMode>(null)
 const selectedProject = ref<TrainingProject | null>(null)
@@ -99,6 +100,16 @@ async function openProject(project: TrainingProject) {
   }
 }
 
+async function scanMaterials() {
+  if (!activeProject.value) return
+  try {
+    const report = await appStore.scanMaterialDirectory(activeProject.value.materialDirectory)
+    ElMessage.success(`已发现 ${report.audioFileCount} 个音频文件`)
+  } catch (error) {
+    ElMessage.error(typeof error === 'string' ? error : '素材目录扫描失败')
+  }
+}
+
 async function refresh() {
   try { await appStore.loadProjects() } catch { ElMessage.error(projectError.value ?? '无法刷新项目列表') }
 }
@@ -137,6 +148,20 @@ onMounted(() => {
         <strong>{{ activeProject.materialDirectory }}</strong>
       </div>
       <span class="project-status">{{ statusCopy[activeProject.trainingStatus] }}</span>
+      <el-button plain :icon="DataAnalysis" :loading="isScanningMaterials" @click="scanMaterials">扫描素材</el-button>
+    </section>
+
+    <section v-if="activeProject && materialScanReport?.directory === activeProject.materialDirectory" class="status-strip material-summary">
+      <div class="status-heading">
+        <span class="status-dot" :class="materialScanReport.issues.length ? 'incomplete' : 'ready'" />
+        <div><strong>素材扫描完成</strong><span>{{ materialScanReport.directory }}</span></div>
+      </div>
+      <div class="status-metrics">
+        <div><span>音频文件</span><strong>{{ materialScanReport.audioFileCount }}</strong></div>
+        <div><span>音频大小</span><strong>{{ formatBytes(materialScanReport.totalAudioBytes) }}</strong></div>
+        <div><span>其他文件</span><strong>{{ materialScanReport.unsupportedFileCount }}</strong></div>
+        <div><span>读取问题</span><strong>{{ materialScanReport.issues.length }}</strong></div>
+      </div>
     </section>
 
     <section class="project-library">

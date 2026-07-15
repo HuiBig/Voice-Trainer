@@ -236,7 +236,8 @@ button:focus-visible {
 
 .active-project {
   display: grid;
-  grid-template-columns: 72px minmax(170px, 0.55fr) minmax(280px, 1fr) auto;
+  grid-template-columns: 72px minmax(170px, 0.55fr) minmax(240px, 1fr) auto auto;
+  column-gap: 18px;
   align-items: center;
   min-height: 116px;
   margin-top: 34px;

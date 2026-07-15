@@ -49,6 +49,15 @@ export interface TrainingProject {
   lastOpenedAt: number | null
 }
 
+export interface MaterialScanReport {
+  scannedAt: number
+  directory: string
+  audioFileCount: number
+  totalAudioBytes: number
+  unsupportedFileCount: number
+  issues: string[]
+}
+
 function errorMessage(error: unknown, fallback = '操作失败，请查看应用日志') {
   if (error instanceof Error) return error.message
   return typeof error === 'string' ? error : fallback
@@ -65,6 +74,8 @@ export const useAppStore = defineStore('app', {
     projectsLoaded: false,
     isLoadingProjects: false,
     projectError: null as string | null,
+    materialScanReport: null as MaterialScanReport | null,
+    isScanningMaterials: false,
   }),
   getters: {
     environmentStatus(state): EnvironmentStatus {
@@ -123,6 +134,15 @@ export const useAppStore = defineStore('app', {
       await invoke('delete_project', { id })
       this.projects = this.projects.filter((item) => item.id !== id)
       if (this.activeProjectId === String(id)) this.activeProjectId = null
+    },
+    async scanMaterialDirectory(directory: string) {
+      this.isScanningMaterials = true
+      try {
+        this.materialScanReport = await invoke<MaterialScanReport>('scan_material_directory', { directory })
+        return this.materialScanReport
+      } finally {
+        this.isScanningMaterials = false
+      }
     },
   },
 })
