@@ -9,7 +9,7 @@ import { formatBytes } from '../utils/format'
 
 const appStore = useAppStore()
 const router = useRouter()
-const { environmentReport, environmentStatus, isCheckingEnvironment } = storeToRefs(appStore)
+const { environmentReport, environmentStatus, isCheckingEnvironment, projects } = storeToRefs(appStore)
 
 const environmentCopy = computed(() => {
   if (environmentStatus.value === 'ready') {
@@ -37,7 +37,7 @@ const setupSteps = computed(() => [
     detail: '确认 FFmpeg、Python、PyTorch 与可用计算设备',
     state: environmentStatus.value === 'ready' ? 'complete' : 'current',
   },
-  { title: '创建第一个项目', detail: '导入已获授权的目标人声音频', state: 'pending' },
+  { title: '创建第一个项目', detail: '登记已获授权的目标人声素材目录', state: projects.value.length ? 'complete' : 'current' },
   { title: '开始数据预处理', detail: '转码、切片并检查训练素材质量', state: 'pending' },
 ])
 
@@ -57,8 +57,11 @@ async function runEnvironmentCheck() {
 
 function handleSetupStep(index: number) {
   if (index === 0) return runEnvironmentCheck()
-  ElMessage.info(index === 1 ? '项目创建将在下一阶段接入' : '请先创建训练项目')
+  if (index === 1) return router.push({ path: '/projects', query: { create: '1' } })
+  ElMessage.info(projects.value.length ? '训练 Worker 将在下一阶段接入' : '请先创建训练项目')
 }
+
+if (!appStore.projectsLoaded) appStore.loadProjects().catch(() => undefined)
 </script>
 
 <template>
@@ -107,7 +110,7 @@ function handleSetupStep(index: number) {
         </div>
       </div>
       <div class="status-metrics">
-        <div><span>活动项目</span><strong>0</strong></div>
+        <div><span>项目数量</span><strong>{{ projects.length }}</strong></div>
         <div><span>可用内存</span><strong>{{ formatBytes(environmentReport?.resources.availableMemoryBytes ?? 0) }}</strong></div>
         <div><span>磁盘可用</span><strong>{{ formatBytes(environmentReport?.resources.availableDiskBytes ?? 0) }}</strong></div>
       </div>

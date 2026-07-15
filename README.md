@@ -1,14 +1,14 @@
 # Voice Trainer
 
-Voice Trainer 是个人 AI 歌声转换工具链的 PC 训练端。它负责在本机导入和处理授权人声音频、训练 RVC 模型、试听 checkpoint，并导出 Android 端可安装的 `.vcpkg` 模型包。
+Voice Trainer 是本地运行的 AI 人声模型训练桌面应用。它负责管理已获授权的人声音频素材、训练 RVC 模型、试听 checkpoint，并在后续阶段导出 Android 端可安装的 `.vcpkg` 模型包。
 
 ## 技术栈
 
 - Tauri 2 / Rust
 - Vue 3 / TypeScript / Vite
-- Element Plus
-- Pinia / Vue Router
-- Python Worker（后续接入 RVC、RMVPE、ContentVec 与 ONNX）
+- Element Plus / Pinia / Vue Router
+- SQLite（项目元数据持久化）
+- Python Worker（下一阶段接入 RVC、RMVPE、ContentVec 与 ONNX）
 
 ## 本地开发
 
@@ -23,59 +23,61 @@ npm run tauri:dev
 npm run dev
 ```
 
-### 本地 FFmpeg 运行时
+## 本地训练运行时
 
-开发环境可将 FFmpeg 放在以下目录，二进制文件不会提交到 Git：
+开发环境会优先检测以下项目本地运行时，相关大型二进制文件不会提交到 Git：
 
 ```text
+runtime-local/windows-x64/python/python.exe
 runtime-local/windows-x64/ffmpeg/bin/ffmpeg.exe
 runtime-local/windows-x64/ffmpeg/bin/ffprobe.exe
 ```
 
-也可以通过 `VOICE_TRAINER_FFMPEG_DIR` 指定包含这两个文件的目录。应用检测顺序为：环境变量、项目本地运行时、应用内置运行时、应用托管运行时、系统 `PATH`。
+也可以使用 `VOICE_TRAINER_PYTHON` 指定 Python 可执行文件，或使用 `VOICE_TRAINER_FFMPEG_DIR` 指定包含 FFmpeg 和 FFprobe 的目录。应用随后会依次检测应用内置运行时、应用托管运行时和系统 `PATH`。
 
-### 本地 Python 运行时
-
-将官方 Python 3.11.9 embeddable ZIP 放到：
-
-```text
-runtime-local/windows-x64/downloads/python-3.11.9-embed-amd64.zip
-```
-
-然后执行初始化脚本：
+准备好官方 Python 3.11.9 embeddable ZIP 后，可初始化便携运行时：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup-python-runtime.ps1
 ```
 
-脚本会生成 `runtime-local/windows-x64/python/`，配置 `Lib/site-packages` 搜索路径并运行基础自检。本地 Python、PyTorch wheel 和其他大型运行时文件均不提交到 Git。
-
-应用会优先检测这个项目本地 Python。也可以通过 `VOICE_TRAINER_PYTHON` 指定 `python.exe` 的完整路径；之后依次检查应用内置运行时、应用托管运行时和系统 `PATH`。
-
-准备好 Python 完整安装器和匹配 Python 3.11/Windows x64 的 PyTorch wheel 后，可安装 CPU 运行时依赖：
+准备好匹配 Python 3.11 / Windows x64 的 PyTorch wheel 后，可安装 CPU 运行时：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/install-pytorch-runtime.ps1
 ```
 
-脚本会在 `runtime-local/windows-x64/python-build/` 建立隔离的构建 Python，并通过 pip 的 `--target` 将 PyTorch 及依赖安装到便携运行时。依赖版本由 `runtime-lock/windows-x64-cpu/pytorch-2.7.1-constraints.txt` 固定。脚本不会修改系统 `PATH`，也不会创建快捷方式或文件关联。
+当前 PyTorch 版本由 `runtime-lock/windows-x64-cpu/pytorch-2.7.1-constraints.txt` 固定。训练依赖暂不提前安装，待 RVC v2 分支固定后再统一锁定。
 
-## 构建检查
+## 项目数据
+
+训练项目元数据保存在系统应用数据目录的 `voice-trainer.sqlite3` 中，包括：
+
+- 项目名称
+- 素材目录
+- 训练状态
+- 创建、更新与最近打开时间
+
+删除项目只会删除 SQLite 中的项目记录，不会删除素材目录中的音频文件。
+
+## 构建与测试
 
 ```bash
 npm run build
-cargo check --manifest-path src-tauri/Cargo.toml
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-## 当前阶段
+## 开发顺序
 
-- [x] Vue + TypeScript + Tauri 项目初始化
-- [x] Element Plus、Pinia 和 Vue Router 接入
-- [x] PC 训练端应用外壳与工作台首页
-- [x] 本机训练环境检测
-- [ ] 本地项目管理与 SQLite 持久化
-- [ ] Python Worker JSON Lines 协议
-- [ ] 音频导入与预处理
-- [ ] RVC 训练和 `.vcpkg` 导出
+- [x] 检测 Python、PyTorch、FFmpeg、FFprobe 与本机资源
+- [x] 创建、打开、重命名和删除训练项目
+- [x] 使用 SQLite 持久化项目元数据
+- [x] 项目列表与新建项目界面
+- [ ] Python Worker JSON Lines 通信协议
+- [ ] 固定 RVC v2 分支
+- [ ] 锁定 NumPy、librosa、RMVPE、ContentVec 等训练依赖
+- [ ] 音频导入、预处理与训练任务
+- [ ] checkpoint 试听与 `.vcpkg` 导出
 
-项目默认完全离线；请只训练本人声音或已取得明确授权的声音。
+项目默认完全离线。请只训练本人声音或已经取得明确授权的声音。

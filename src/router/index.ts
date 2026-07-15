@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import EnvironmentView from '../views/EnvironmentView.vue'
 import PlaceholderView from '../views/PlaceholderView.vue'
+import ProjectsView from '../views/ProjectsView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -10,8 +11,7 @@ const router = createRouter({
     {
       path: '/projects',
       name: 'projects',
-      component: PlaceholderView,
-      props: { title: '训练项目', description: '项目创建与素材管理将在下一阶段接入。' },
+      component: ProjectsView,
     },
     {
       path: '/training',

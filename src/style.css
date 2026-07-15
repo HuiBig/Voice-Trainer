@@ -221,10 +221,421 @@ button:focus-visible {
 }
 
 .home-view,
-.placeholder-view {
+.placeholder-view,
+.projects-view {
   width: min(1120px, calc(100% - 80px));
   margin: 0 auto;
   padding: 38px 0 56px;
+}
+
+.projects-header p {
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.active-project {
+  display: grid;
+  grid-template-columns: 72px minmax(170px, 0.55fr) minmax(280px, 1fr) auto;
+  align-items: center;
+  min-height: 116px;
+  margin-top: 34px;
+  border-top: 1px solid rgba(103, 224, 179, 0.32);
+  border-bottom: 1px solid rgba(103, 224, 179, 0.18);
+  background: linear-gradient(90deg, rgba(103, 224, 179, 0.055), transparent 62%);
+}
+
+.active-signal {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 40px;
+}
+
+.active-signal span {
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: signal-enter 420ms ease both;
+}
+
+.active-project h2 {
+  margin-top: 7px;
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-path {
+  min-width: 0;
+  padding: 0 26px;
+  border-left: 1px solid var(--line);
+}
+
+.active-path span,
+.active-path strong {
+  display: block;
+}
+
+.active-path span,
+.project-meta span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.active-path strong {
+  margin-top: 8px;
+  overflow: hidden;
+  color: #c7cfcc;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-library {
+  padding-top: 38px;
+}
+
+.library-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 18px;
+}
+
+.library-toolbar h3 {
+  margin-top: 5px;
+  font-size: 19px;
+  font-weight: 540;
+}
+
+.library-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 260px;
+  height: 36px;
+  padding: 0 11px;
+  border-bottom: 1px solid var(--line);
+  color: #6f7a76;
+  transition: border-color 160ms ease;
+}
+
+.search-field:focus-within {
+  border-color: var(--accent);
+}
+
+.search-field input,
+.form-field input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+}
+
+.search-field input {
+  font-size: 11px;
+}
+
+.search-field input::placeholder,
+.form-field input::placeholder {
+  color: #5f6965;
+}
+
+.icon-button,
+.row-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  color: #77827e;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.icon-button:hover,
+.row-actions button:hover {
+  color: var(--accent);
+}
+
+.icon-button:disabled {
+  cursor: wait;
+}
+
+.spinning {
+  animation: orbit-scan 900ms linear infinite;
+}
+
+.project-list {
+  border-top: 1px solid var(--line);
+  transition: opacity 160ms ease;
+}
+
+.project-list.loading {
+  opacity: 0.52;
+}
+
+.project-row {
+  display: grid;
+  grid-template-columns: 52px minmax(230px, 1fr) 170px 92px 104px;
+  align-items: center;
+  min-height: 82px;
+  border-bottom: 1px solid var(--line);
+  transition: background 160ms ease, padding 160ms ease;
+}
+
+.project-row:hover,
+.project-row.active {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.project-row.active {
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+.project-index {
+  color: #58625e;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+}
+
+.project-main {
+  min-width: 0;
+  padding: 17px 24px 17px 0;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.project-main strong,
+.project-main span,
+.project-meta strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-main strong {
+  font-size: 13px;
+  font-weight: 560;
+}
+
+.project-main span {
+  margin-top: 7px;
+  color: var(--muted);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+}
+
+.project-meta {
+  min-width: 0;
+}
+
+.project-meta strong {
+  margin-top: 6px;
+  color: #bec7c3;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.project-status {
+  justify-self: start;
+  padding: 5px 8px;
+  border: 1px solid rgba(103, 224, 179, 0.18);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(103, 224, 179, 0.055);
+  font-size: 9px;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.row-actions button {
+  width: 31px;
+  height: 31px;
+  border-radius: 4px;
+}
+
+.row-actions button:hover {
+  background: rgba(103, 224, 179, 0.07);
+}
+
+.row-actions button.danger:hover {
+  color: #f08d82;
+  background: rgba(240, 141, 130, 0.07);
+}
+
+.project-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.project-empty > .el-icon {
+  color: #53605b;
+  font-size: 30px;
+}
+
+.empty-index {
+  color: var(--warning);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.project-empty h2 {
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: 540;
+}
+
+.project-empty p {
+  margin: 9px 0 24px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 232px;
+  background: rgba(5, 8, 7, 0.72);
+  backdrop-filter: blur(7px);
+}
+
+.project-dialog {
+  width: min(470px, calc(100vw - 320px));
+  padding: 28px 30px 30px;
+  border: 1px solid #35403c;
+  border-radius: 8px;
+  background: #181e1c;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+.dialog-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--accent);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+.dialog-kicker .el-icon {
+  color: #59645f;
+}
+
+.project-dialog h2 {
+  margin-top: 10px;
+  font-size: 24px;
+  font-weight: 540;
+  letter-spacing: -0.03em;
+}
+
+.form-field {
+  display: block;
+  margin-top: 28px;
+}
+
+.form-field > span {
+  display: block;
+  margin-bottom: 10px;
+  color: #aab4b0;
+  font-size: 11px;
+}
+
+.form-field input {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #131816;
+  font-size: 12px;
+  transition: border-color 160ms ease;
+}
+
+.form-field input:focus {
+  border-color: var(--accent);
+}
+
+.form-field small {
+  display: block;
+  margin-top: 8px;
+  color: #69736f;
+  font-size: 9px;
+}
+
+.delete-copy {
+  margin-top: 24px;
+  color: #b7c0bc;
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.dialog-enter-active,
+.dialog-leave-active {
+  transition: opacity 180ms ease;
+}
+
+.dialog-enter-active .project-dialog,
+.dialog-leave-active .project-dialog {
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.dialog-enter-from,
+.dialog-leave-to,
+.dialog-enter-from .project-dialog,
+.dialog-leave-to .project-dialog {
+  opacity: 0;
+}
+
+.dialog-enter-from .project-dialog,
+.dialog-leave-to .project-dialog {
+  transform: translateY(10px) scale(0.985);
 }
 
 .topbar,
@@ -866,7 +1277,8 @@ h1 {
 
   .home-view,
   .placeholder-view,
-  .environment-view {
+  .environment-view,
+  .projects-view {
     width: calc(100% - 48px);
   }
 
@@ -877,6 +1289,14 @@ h1 {
   .status-metrics > div {
     min-width: 92px;
     padding: 0 14px;
+  }
+
+  .project-row {
+    grid-template-columns: 42px minmax(210px, 1fr) 145px 82px 104px;
+  }
+
+  .dialog-backdrop {
+    padding-left: 208px;
   }
 }
 
