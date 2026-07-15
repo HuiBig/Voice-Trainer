@@ -52,6 +52,14 @@ powershell -ExecutionPolicy Bypass -File scripts/setup-python-runtime.ps1
 
 应用会优先检测这个项目本地 Python。也可以通过 `VOICE_TRAINER_PYTHON` 指定 `python.exe` 的完整路径；之后依次检查应用内置运行时、应用托管运行时和系统 `PATH`。
 
+准备好 Python 完整安装器和匹配 Python 3.11/Windows x64 的 PyTorch wheel 后，可安装 CPU 运行时依赖：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install-pytorch-runtime.ps1
+```
+
+脚本会在 `runtime-local/windows-x64/python-build/` 建立隔离的构建 Python，并通过 pip 的 `--target` 将 PyTorch 及依赖安装到便携运行时。依赖版本由 `runtime-lock/windows-x64-cpu/pytorch-2.7.1-constraints.txt` 固定。脚本不会修改系统 `PATH`，也不会创建快捷方式或文件关联。
+
 ## 构建检查
 
 ```bash
