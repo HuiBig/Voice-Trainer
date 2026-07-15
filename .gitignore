@@ -23,6 +23,7 @@ venv/
 
 # Large local runtime binaries (installed/staged outside Git)
 runtime-local/
+src-tauri/runtime-bundle/
 
 # Editor directories and files
 .vscode/*

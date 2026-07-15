@@ -13,4 +13,5 @@ PYTHON="${VOICE_TRAINER_PYTHON:-python3}"
 expected_commit="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])' "$LOCK_PATH")"
 actual_commit="$(git -C "$SOURCE_PATH" rev-parse HEAD)"
 [[ "$actual_commit" == "$expected_commit" ]] || { echo "RVC source mismatch: expected $expected_commit, got $actual_commit" >&2; exit 1; }
+git -C "$SOURCE_PATH" diff --quiet HEAD -- || { echo "RVC tracked source files differ from locked commit $expected_commit" >&2; exit 1; }
 echo "Verified RVC v2 source at commit $actual_commit"

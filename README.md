@@ -113,6 +113,20 @@ cargo test --manifest-path src-tauri/Cargo.toml
 runtime-local/windows-x64/python/python.exe -m unittest discover -s python-worker/tests -v
 ```
 
+### 自包含安装包
+
+正式交付包必须包含 Python、PyTorch、RVC、FFmpeg、FFprobe 和锁定的模型资源，用户无需安装 Homebrew、Python 或其他训练依赖。macOS 的 Apple Silicon 与 Intel 运行时包含不同的原生二进制，需要分别在对应架构机器上构建安装包。
+
+发布运行时中的 Python 必须是可重定位的独立 Python 3.11 发行版，不能使用 `setup-python-runtime.sh` 生成的开发用 venv，也不能是指向 Homebrew 或系统 Python 的符号链接。将完整运行时准备到当前平台的 `runtime-local/<平台>` 后执行：
+
+```bash
+npm run tauri:build:bundled
+```
+
+该命令会拒绝开发用 venv，并校验独立 Python 3.11、PyTorch 2.7.1、RVC Python 依赖、FFmpeg/FFprobe、锁定的 RVC 源码提交及四个模型文件的大小和 SHA-256。校验通过后才会把运行时嵌入 Tauri 安装包；离线 wheels、Git 元数据和 Python 缓存不会进入最终包。
+
+正式版只使用应用内置或应用托管的运行时，不会依赖用户系统的 Python、FFmpeg 或 shell `PATH`。开发版仍保留系统工具回退，便于本地调试。
+
 ## 开发顺序
 
 - [x] 检测 Python、PyTorch、FFmpeg、FFprobe 与本机资源

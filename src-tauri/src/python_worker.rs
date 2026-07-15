@@ -89,7 +89,7 @@ fn python_candidates(resource_dir: Option<&Path>) -> Vec<PathBuf> {
     if let Some(runtime_root) = runtime_paths::managed_runtime_root() {
         candidates.push(runtime_root.join(runtime_paths::python_relative_path()));
     }
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", debug_assertions))]
     candidates.extend([
         PathBuf::from("/opt/homebrew/bin/python3.11"),
         PathBuf::from("/usr/local/bin/python3.11"),
@@ -97,8 +97,11 @@ fn python_candidates(resource_dir: Option<&Path>) -> Vec<PathBuf> {
         PathBuf::from("/usr/local/bin/python3"),
         PathBuf::from("/usr/bin/python3"),
     ]);
-    candidates.push(PathBuf::from("python"));
-    candidates.push(PathBuf::from("python3"));
+    #[cfg(debug_assertions)]
+    {
+        candidates.push(PathBuf::from("python"));
+        candidates.push(PathBuf::from("python3"));
+    }
     candidates
 }
 
@@ -363,6 +366,10 @@ mod tests {
 
     #[test]
     fn worker_process_round_trip() {
+        if resolve_python(None).is_err() {
+            eprintln!("skipping worker round trip: Python 3.11 runtime is unavailable");
+            return;
+        }
         let mut worker = WorkerProcess::spawn(None).expect("worker should start");
         let response = worker
             .request("test-1".to_string(), "ping", json!({"source": "rust"}))

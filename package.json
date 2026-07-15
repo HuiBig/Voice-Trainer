@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "tauri:build:bundled": "bash scripts/prepare-bundled-runtime.sh && tauri build --config src-tauri/tauri.bundled.conf.json"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

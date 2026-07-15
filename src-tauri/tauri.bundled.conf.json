@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "resources": {
+      "runtime-bundle/runtime/": "runtime/"
+    }
+  }
+}
