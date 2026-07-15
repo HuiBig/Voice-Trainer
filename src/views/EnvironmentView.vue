@@ -123,7 +123,7 @@ async function runCheck() {
     <section v-else class="environment-empty">
       <div class="scan-orbit" aria-hidden="true"><span /></div>
       <h2>建立本机能力基线</h2>
-      <p>检测 Python、PyTorch、FFmpeg、FFprobe、CUDA、内存与训练磁盘空间。</p>
+      <p>检测 Python、PyTorch、FFmpeg、FFprobe、CUDA/MPS、内存与训练磁盘空间。</p>
     </section>
   </section>
 </template>

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "v2",
+  "sampleRate": 40000,
+  "repository": "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git",
+  "upstreamRef": "refs/tags/2.2.231006",
+  "commit": "9f2f0559e6932c10c48642d404e7d2e771d9db43",
+  "fairseq": {
+    "repository": "https://github.com/One-sixth/fairseq.git",
+    "upstreamRef": "refs/heads/main",
+    "commit": "44800430a728c2216fd1cf1e8daa672f50dfacba"
+  }
+}

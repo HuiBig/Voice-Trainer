@@ -1,3 +1,4 @@
+use crate::runtime_paths;
 use serde::Serialize;
 use std::{
     ffi::OsStr,
@@ -6,6 +7,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use sysinfo::{Disks, System};
+use tauri::Manager;
 
 const GIB: u64 = 1024 * 1024 * 1024;
 
@@ -73,7 +75,10 @@ fn first_output_line(command: impl AsRef<OsStr>, args: &[&str]) -> Option<String
         .map(|line| line.chars().take(180).collect())
 }
 
-fn ffmpeg_candidates(executable: &str) -> Vec<(PathBuf, &'static str)> {
+fn ffmpeg_candidates(
+    executable: &str,
+    resource_dir: Option<&Path>,
+) -> Vec<(PathBuf, &'static str)> {
     let mut candidates = Vec::new();
 
     if let Some(directory) = std::env::var_os("VOICE_TRAINER_FFMPEG_DIR") {
@@ -82,49 +87,42 @@ fn ffmpeg_candidates(executable: &str) -> Vec<(PathBuf, &'static str)> {
 
     #[cfg(debug_assertions)]
     if let Some(project_root) = Path::new(env!("CARGO_MANIFEST_DIR")).parent() {
-        candidates.push((
-            project_root
-                .join("runtime-local")
-                .join("windows-x64")
-                .join("ffmpeg")
-                .join("bin")
-                .join(executable),
-            "项目本地运行时",
-        ));
-    }
-
-    if let Ok(current_executable) = std::env::current_exe() {
-        if let Some(app_directory) = current_executable.parent() {
+        if let Some(runtime_root) = runtime_paths::project_runtime_root(project_root) {
             candidates.push((
-                app_directory
-                    .join("runtime")
-                    .join("ffmpeg")
-                    .join("bin")
-                    .join(executable),
-                "应用内置运行时",
+                runtime_root.join("ffmpeg").join("bin").join(executable),
+                "项目本地运行时",
             ));
         }
     }
 
-    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+    if let Some(resource_dir) = resource_dir {
         candidates.push((
-            PathBuf::from(local_app_data)
-                .join("VoiceTrainer")
-                .join("runtime")
-                .join("current")
+            runtime_paths::bundled_runtime_root(resource_dir)
                 .join("ffmpeg")
                 .join("bin")
                 .join(executable),
+            "应用内置运行时",
+        ));
+    }
+
+    if let Some(runtime_root) = runtime_paths::managed_runtime_root() {
+        candidates.push((
+            runtime_root.join("ffmpeg").join("bin").join(executable),
             "应用托管运行时",
         ));
+    }
+
+    #[cfg(target_os = "macos")]
+    for directory in ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"] {
+        candidates.push((PathBuf::from(directory).join(executable), "系统工具目录"));
     }
 
     candidates.push((PathBuf::from(executable), "系统 PATH"));
     candidates
 }
 
-fn ffmpeg_version(executable: &str) -> Option<String> {
-    ffmpeg_candidates(executable)
+fn ffmpeg_version(executable: &str, resource_dir: Option<&Path>) -> Option<String> {
+    ffmpeg_candidates(executable, resource_dir)
         .into_iter()
         .filter(|(path, source)| *source == "系统 PATH" || path.is_file())
         .find_map(|(path, source)| {
@@ -149,7 +147,7 @@ fn dependency(
     }
 }
 
-fn python_candidates() -> Vec<(PathBuf, &'static str)> {
+fn python_candidates(resource_dir: Option<&Path>) -> Vec<(PathBuf, &'static str)> {
     let mut candidates = Vec::new();
 
     if let Some(executable) = std::env::var_os("VOICE_TRAINER_PYTHON") {
@@ -158,38 +156,38 @@ fn python_candidates() -> Vec<(PathBuf, &'static str)> {
 
     #[cfg(debug_assertions)]
     if let Some(project_root) = Path::new(env!("CARGO_MANIFEST_DIR")).parent() {
-        candidates.push((
-            project_root
-                .join("runtime-local")
-                .join("windows-x64")
-                .join("python")
-                .join("python.exe"),
-            "项目本地运行时",
-        ));
-    }
-
-    if let Ok(current_executable) = std::env::current_exe() {
-        if let Some(app_directory) = current_executable.parent() {
+        if let Some(runtime_root) = runtime_paths::project_runtime_root(project_root) {
             candidates.push((
-                app_directory
-                    .join("runtime")
-                    .join("python")
-                    .join("python.exe"),
-                "应用内置运行时",
+                runtime_root.join(runtime_paths::python_relative_path()),
+                "项目本地运行时",
             ));
         }
     }
 
-    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+    if let Some(resource_dir) = resource_dir {
         candidates.push((
-            PathBuf::from(local_app_data)
-                .join("VoiceTrainer")
-                .join("runtime")
-                .join("current")
-                .join("python")
-                .join("python.exe"),
+            runtime_paths::bundled_runtime_root(resource_dir)
+                .join(runtime_paths::python_relative_path()),
+            "应用内置运行时",
+        ));
+    }
+
+    if let Some(runtime_root) = runtime_paths::managed_runtime_root() {
+        candidates.push((
+            runtime_root.join(runtime_paths::python_relative_path()),
             "应用托管运行时",
         ));
+    }
+
+    #[cfg(target_os = "macos")]
+    for executable in [
+        "/opt/homebrew/bin/python3.11",
+        "/usr/local/bin/python3.11",
+        "/opt/homebrew/bin/python3",
+        "/usr/local/bin/python3",
+        "/usr/bin/python3",
+    ] {
+        candidates.push((PathBuf::from(executable), "系统工具目录"));
     }
 
     candidates.push((PathBuf::from("python"), "系统 PATH"));
@@ -197,13 +195,16 @@ fn python_candidates() -> Vec<(PathBuf, &'static str)> {
     candidates
 }
 
-fn python_runtime() -> (Option<PathBuf>, Option<String>) {
-    python_candidates()
+fn python_runtime(resource_dir: Option<&Path>) -> (Option<PathBuf>, Option<String>) {
+    python_candidates(resource_dir)
         .into_iter()
         .filter(|(path, source)| *source == "系统 PATH" || path.is_file())
         .find_map(|(path, source)| {
-            first_output_line(&path, &["--version"])
-                .map(|version| (Some(path), Some(format!("{version} · {source}"))))
+            first_output_line(&path, &["--version"]).and_then(|version| {
+                version
+                    .starts_with("Python 3.11.")
+                    .then(|| (Some(path), Some(format!("{version} · {source}"))))
+            })
         })
         .unwrap_or((None, None))
 }
@@ -213,7 +214,27 @@ fn pytorch_version(python: Option<&Path>) -> Option<String> {
         python?,
         &[
             "-c",
-            "import torch; print(f'PyTorch {torch.__version__} · CUDA {torch.cuda.is_available()}')",
+            "import torch; print(f'PyTorch {torch.__version__} · CUDA {torch.cuda.is_available()} · MPS {bool(getattr(torch.backends, \"mps\", None) and torch.backends.mps.is_available())}')",
+        ],
+    )
+}
+
+fn accelerator_version(python: Option<&Path>) -> Option<String> {
+    if cfg!(target_os = "macos") {
+        return first_output_line(
+            python?,
+            &[
+                "-c",
+                "import torch; ok=bool(getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available()); print('Apple Metal (MPS)' if ok else '')",
+            ],
+        )
+        .filter(|value| !value.trim().is_empty());
+    }
+    first_output_line(
+        "nvidia-smi",
+        &[
+            "--query-gpu=name,driver_version,memory.total",
+            "--format=csv,noheader",
         ],
     )
 }
@@ -234,13 +255,14 @@ fn disk_resource(disks: &Disks, current_path: &Path) -> (u64, String) {
 }
 
 #[tauri::command]
-pub async fn check_environment() -> Result<EnvironmentReport, String> {
-    tauri::async_runtime::spawn_blocking(build_environment_report)
+pub async fn check_environment(app: tauri::AppHandle) -> Result<EnvironmentReport, String> {
+    let resource_dir = app.path().resource_dir().ok();
+    tauri::async_runtime::spawn_blocking(move || build_environment_report(resource_dir))
         .await
         .map_err(|error| format!("环境检测任务异常结束：{error}"))
 }
 
-fn build_environment_report() -> EnvironmentReport {
+fn build_environment_report(resource_dir: Option<PathBuf>) -> EnvironmentReport {
     let system = System::new_all();
     let disks = Disks::new_with_refreshed_list();
     let current_path = std::env::current_exe()
@@ -248,7 +270,15 @@ fn build_environment_report() -> EnvironmentReport {
         .or_else(|| std::env::current_dir().ok())
         .unwrap_or_default();
     let (available_disk_bytes, disk_mount) = disk_resource(&disks, &current_path);
-    let (python_command, python_version) = python_runtime();
+    let resource_dir = resource_dir.as_deref();
+    let (python_command, python_version) = python_runtime(resource_dir);
+    let ffmpeg = runtime_paths::executable_name("ffmpeg");
+    let ffprobe = runtime_paths::executable_name("ffprobe");
+    let accelerator_name = if cfg!(target_os = "macos") {
+        "Apple Metal (MPS)"
+    } else {
+        "NVIDIA CUDA"
+    };
 
     let dependencies = vec![
         dependency(
@@ -256,7 +286,7 @@ fn build_environment_report() -> EnvironmentReport {
             "Python",
             true,
             python_version,
-            "安装项目锁定的 Python 3.10/3.11 运行时",
+            "安装项目锁定的 Python 3.11 运行时",
         ),
         dependency(
             "pytorch",
@@ -269,28 +299,22 @@ fn build_environment_report() -> EnvironmentReport {
             "ffmpeg",
             "FFmpeg",
             true,
-            ffmpeg_version("ffmpeg.exe"),
-            "将 ffmpeg.exe 放入项目本地或应用托管运行时目录",
+            ffmpeg_version(&ffmpeg, resource_dir),
+            "将 FFmpeg 放入项目本地或应用托管运行时目录",
         ),
         dependency(
             "ffprobe",
             "FFprobe",
             true,
-            ffmpeg_version("ffprobe.exe"),
-            "将 ffprobe.exe 与 ffmpeg.exe 放在同一个 bin 目录",
+            ffmpeg_version(&ffprobe, resource_dir),
+            "将 FFprobe 与 FFmpeg 放在同一个 bin 目录",
         ),
         dependency(
-            "nvidia",
-            "NVIDIA CUDA",
+            "accelerator",
+            accelerator_name,
             false,
-            first_output_line(
-                "nvidia-smi",
-                &[
-                    "--query-gpu=name,driver_version,memory.total",
-                    "--format=csv,noheader",
-                ],
-            ),
-            "未检测到时将使用 CPU；后续可配置 NVIDIA CUDA",
+            accelerator_version(python_command.as_deref()),
+            "未检测到时将使用 CPU 兼容模式",
         ),
     ];
 
@@ -309,9 +333,9 @@ fn build_environment_report() -> EnvironmentReport {
     }
     if !dependencies
         .iter()
-        .any(|item| item.id == "nvidia" && item.available)
+        .any(|item| item.id == "accelerator" && item.available)
     {
-        warnings.push("未检测到 NVIDIA CUDA，将使用 CPU 兼容模式".to_string());
+        warnings.push(format!("未检测到 {accelerator_name}，将使用 CPU 兼容模式"));
     }
 
     EnvironmentReport {
@@ -347,7 +371,7 @@ mod tests {
 
     #[test]
     fn environment_report_has_consistent_summary() {
-        let report = build_environment_report();
+        let report = build_environment_report(None);
         let required_total = report
             .dependencies
             .iter()
@@ -365,33 +389,34 @@ mod tests {
         assert!(report.resources.total_memory_bytes > 0);
         assert!(!report.platform.architecture.is_empty());
 
-        let local_ffmpeg = Path::new(env!("CARGO_MANIFEST_DIR"))
+        let project_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
-            .expect("Tauri crate should have a project root")
-            .join("runtime-local/windows-x64/ffmpeg/bin/ffmpeg.exe");
-        if local_ffmpeg.is_file() {
-            let ffmpeg = report
-                .dependencies
-                .iter()
-                .find(|item| item.id == "ffmpeg")
-                .expect("FFmpeg dependency should exist");
-            assert!(ffmpeg.available);
-            assert!(ffmpeg.detail.contains("项目本地运行时"));
-        }
+            .expect("Tauri crate should have a project root");
+        if let Some(runtime_root) = runtime_paths::project_runtime_root(project_root) {
+            let local_ffmpeg = runtime_root
+                .join("ffmpeg/bin")
+                .join(runtime_paths::executable_name("ffmpeg"));
+            if local_ffmpeg.is_file() {
+                let ffmpeg = report
+                    .dependencies
+                    .iter()
+                    .find(|item| item.id == "ffmpeg")
+                    .expect("FFmpeg dependency should exist");
+                assert!(ffmpeg.available);
+                assert!(ffmpeg.detail.contains("项目本地运行时"));
+            }
 
-        let local_python = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .expect("Tauri crate should have a project root")
-            .join("runtime-local/windows-x64/python/python.exe");
-        if local_python.is_file() {
-            let python = report
-                .dependencies
-                .iter()
-                .find(|item| item.id == "python")
-                .expect("Python dependency should exist");
-            assert!(python.available);
-            assert!(python.detail.contains("Python 3.11.9"));
-            assert!(python.detail.contains("项目本地运行时"));
+            let local_python = runtime_root.join(runtime_paths::python_relative_path());
+            if local_python.is_file() {
+                let python = report
+                    .dependencies
+                    .iter()
+                    .find(|item| item.id == "python")
+                    .expect("Python dependency should exist");
+                assert!(python.available);
+                assert!(python.detail.contains("Python 3.11.9"));
+                assert!(python.detail.contains("项目本地运行时"));
+            }
         }
     }
 }
