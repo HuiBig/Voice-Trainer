@@ -7,10 +7,26 @@ import {
   Setting,
   UploadFilled,
 } from '@element-plus/icons-vue'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAppStore } from './stores/app'
 
 const route = useRoute()
 const router = useRouter()
+const appStore = useAppStore()
+const { environmentStatus } = storeToRefs(appStore)
+
+const runtimeCopy = computed(() => {
+  const copy = {
+    pending: '等待环境检测',
+    checking: '正在检测环境',
+    ready: '训练依赖已就绪',
+    incomplete: '训练依赖不完整',
+    error: '检测失败',
+  }
+  return copy[environmentStatus.value]
+})
 
 const navigation = [
   { label: '工作台', path: '/', icon: House },
@@ -48,11 +64,11 @@ const navigation = [
       </nav>
 
       <div class="sidebar-footer">
-        <div class="runtime-state">
-          <span class="status-dot" />
+        <div class="runtime-state" role="status">
+          <span class="status-dot" :class="environmentStatus" />
           <div>
             <strong>训练引擎</strong>
-            <span>等待环境检测</span>
+            <span>{{ runtimeCopy }}</span>
           </div>
           <el-icon><Cpu /></el-icon>
         </div>

@@ -35,7 +35,7 @@ cargo check --manifest-path src-tauri/Cargo.toml
 - [x] Vue + TypeScript + Tauri 项目初始化
 - [x] Element Plus、Pinia 和 Vue Router 接入
 - [x] PC 训练端应用外壳与工作台首页
-- [ ] 本机训练环境检测
+- [x] 本机训练环境检测
 - [ ] 本地项目管理与 SQLite 持久化
 - [ ] Python Worker JSON Lines 协议
 - [ ] 音频导入与预处理

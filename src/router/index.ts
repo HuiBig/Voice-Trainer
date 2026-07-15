@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import EnvironmentView from '../views/EnvironmentView.vue'
 import PlaceholderView from '../views/PlaceholderView.vue'
 
 const router = createRouter({
@@ -27,8 +28,7 @@ const router = createRouter({
     {
       path: '/settings',
       name: 'settings',
-      component: PlaceholderView,
-      props: { title: '设置', description: '运行环境、存储路径和日志设置将在这里管理。' },
+      component: EnvironmentView,
     },
   ],
 })

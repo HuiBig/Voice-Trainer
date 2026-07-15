@@ -195,6 +195,23 @@ button:focus-visible {
   box-shadow: 0 0 0 4px rgba(232, 183, 104, 0.1);
 }
 
+.status-dot.checking {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(103, 224, 179, 0.1);
+  animation: status-pulse 1.2s ease-in-out infinite;
+}
+
+.status-dot.ready {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(103, 224, 179, 0.1);
+}
+
+.status-dot.incomplete,
+.status-dot.error {
+  background: var(--warning);
+  box-shadow: 0 0 0 4px rgba(232, 183, 104, 0.1);
+}
+
 .workspace {
   height: 100vh;
   overflow: auto;
@@ -307,6 +324,11 @@ h1 {
   transform: translateX(4px);
 }
 
+.text-action:disabled {
+  opacity: 0.62;
+  cursor: wait;
+}
+
 .signal-visual {
   position: relative;
   display: flex;
@@ -354,6 +376,10 @@ h1 {
   background: linear-gradient(to bottom, rgba(103, 224, 179, 0.35), var(--accent), rgba(103, 224, 179, 0.35));
   box-shadow: 0 0 12px rgba(103, 224, 179, 0.12);
   animation: signal-enter 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.waveform.scanning span {
+  animation: signal-scan 900ms ease-in-out infinite alternate;
 }
 
 .signal-caption {
@@ -506,6 +532,263 @@ h1 {
   color: var(--warning);
 }
 
+.step-state.complete {
+  color: var(--accent);
+}
+
+.environment-view {
+  width: min(1120px, calc(100% - 80px));
+  margin: 0 auto;
+  padding: 38px 0 64px;
+}
+
+.environment-header p {
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.environment-summary {
+  display: flex;
+  align-items: center;
+  min-height: 118px;
+  margin-top: 34px;
+  padding: 0 4px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.summary-state {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.summary-state h2 {
+  margin-top: 7px;
+  font-size: 25px;
+  font-weight: 540;
+  letter-spacing: -0.03em;
+}
+
+.summary-count {
+  display: flex;
+  flex-direction: column;
+  margin-left: auto;
+  padding-left: 34px;
+  border-left: 1px solid var(--line);
+}
+
+.summary-count strong {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.summary-count span,
+.environment-summary > p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.environment-summary > p {
+  margin: 0 0 0 auto;
+}
+
+.system-section,
+.dependency-section {
+  padding-top: 38px;
+}
+
+.system-facts {
+  display: grid;
+  grid-template-columns: 1.35fr 0.75fr 1fr 1fr;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.system-facts > div {
+  min-width: 0;
+  padding: 20px 22px 20px 0;
+}
+
+.system-facts > div + div {
+  padding-left: 22px;
+  border-left: 1px solid var(--line);
+}
+
+.system-facts span,
+.system-facts strong,
+.system-facts small {
+  display: block;
+}
+
+.system-facts span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.system-facts strong {
+  margin-top: 8px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-facts small {
+  margin-top: 5px;
+  overflow: hidden;
+  color: #697470;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dependency-list {
+  border-top: 1px solid var(--line);
+}
+
+.dependency-row {
+  display: grid;
+  grid-template-columns: 44px minmax(130px, 0.5fr) minmax(300px, 1.5fr);
+  align-items: center;
+  min-height: 74px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dependency-row > .el-icon {
+  font-size: 17px;
+}
+
+.dependency-row > .el-icon.available {
+  color: var(--accent);
+}
+
+.dependency-row > .el-icon.missing {
+  color: var(--warning);
+}
+
+.dependency-name strong,
+.dependency-name span,
+.dependency-detail strong,
+.dependency-detail span {
+  display: block;
+}
+
+.dependency-name strong,
+.dependency-detail strong {
+  font-size: 12px;
+  font-weight: 560;
+}
+
+.dependency-name span,
+.dependency-detail span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.dependency-detail {
+  min-width: 0;
+}
+
+.dependency-detail strong {
+  overflow: hidden;
+  color: #c8cfcc;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warning-section {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  margin-top: 34px;
+  padding: 22px 0;
+  border-top: 1px solid rgba(232, 183, 104, 0.28);
+  border-bottom: 1px solid rgba(232, 183, 104, 0.28);
+}
+
+.warning-section .section-index {
+  color: var(--warning);
+}
+
+.warning-section ul {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  color: #c8cfcc;
+  font-size: 11px;
+  list-style: none;
+}
+
+.warning-section li::before {
+  margin-right: 9px;
+  color: var(--warning);
+  content: "—";
+}
+
+.environment-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 390px;
+  text-align: center;
+}
+
+.environment-empty h2 {
+  margin-top: 27px;
+  font-size: 20px;
+  font-weight: 540;
+}
+
+.environment-empty p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.scan-orbit {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.scan-orbit::before,
+.scan-orbit::after {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(103, 224, 179, 0.18);
+  border-radius: 50%;
+  content: "";
+}
+
+.scan-orbit::after {
+  inset: 26px;
+  background: var(--accent);
+  box-shadow: 0 0 18px rgba(103, 224, 179, 0.3);
+}
+
+.scan-orbit span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  transform-origin: left center;
+  animation: orbit-scan 2.4s linear infinite;
+}
+
 .placeholder-view {
   padding-top: 90px;
 }
@@ -553,13 +836,37 @@ h1 {
   }
 }
 
+@keyframes signal-scan {
+  from {
+    opacity: 0.35;
+    transform: scaleY(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes status-pulse {
+  50% {
+    box-shadow: 0 0 0 7px rgba(103, 224, 179, 0.03);
+  }
+}
+
+@keyframes orbit-scan {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 208px minmax(0, 1fr);
   }
 
   .home-view,
-  .placeholder-view {
+  .placeholder-view,
+  .environment-view {
     width: calc(100% - 48px);
   }
 
