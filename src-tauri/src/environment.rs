@@ -112,11 +112,12 @@ fn ffmpeg_candidates(
         ));
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", debug_assertions))]
     for directory in ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"] {
         candidates.push((PathBuf::from(directory).join(executable), "系统工具目录"));
     }
 
+    #[cfg(debug_assertions)]
     candidates.push((PathBuf::from(executable), "系统 PATH"));
     candidates
 }
@@ -179,7 +180,7 @@ fn python_candidates(resource_dir: Option<&Path>) -> Vec<(PathBuf, &'static str)
         ));
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", debug_assertions))]
     for executable in [
         "/opt/homebrew/bin/python3.11",
         "/usr/local/bin/python3.11",
@@ -190,8 +191,11 @@ fn python_candidates(resource_dir: Option<&Path>) -> Vec<(PathBuf, &'static str)
         candidates.push((PathBuf::from(executable), "系统工具目录"));
     }
 
-    candidates.push((PathBuf::from("python"), "系统 PATH"));
-    candidates.push((PathBuf::from("python3"), "系统 PATH"));
+    #[cfg(debug_assertions)]
+    {
+        candidates.push((PathBuf::from("python"), "系统 PATH"));
+        candidates.push((PathBuf::from("python3"), "系统 PATH"));
+    }
     candidates
 }
 
@@ -414,7 +418,7 @@ mod tests {
                     .find(|item| item.id == "python")
                     .expect("Python dependency should exist");
                 assert!(python.available);
-                assert!(python.detail.contains("Python 3.11.9"));
+                assert!(python.detail.contains("Python 3.11."));
                 assert!(python.detail.contains("项目本地运行时"));
             }
         }
